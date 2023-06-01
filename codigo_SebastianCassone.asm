@@ -11,7 +11,7 @@
 	operador: .space 3
 	
 	# Se utiliza para los acarreos en la suma
-	acarreos: .word 0, 0, 0, 0, 0, 0, 0
+	direccionAcarreos: .word 0x10010180
 	signos: .asciiz "++"
 	
 	# Se guardan los signos que se ocupan los operando
@@ -20,7 +20,7 @@
 	direccion1: .word 0x100100a0
 	operando1: .word 0x00000001, 0x00000002, 0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 	direccion2: .word 0x100100c0
-	operando2: .word 0x00000005, 0x00000007, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+	operando2: .word 0x00000005, 0x00000009, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 	direccion3: .word 0x100100e0
 	
 	# operaciones
@@ -82,11 +82,12 @@
    		sw $t6, 16($t5)
    		sw $t7, 20($t5)
    		sw $t8, 24($t5)
-   		
+   		  		
    		# Se guarda los signos del operando 1 y 2
    		la $t9, signos
    		lw $s1, 0($t9)
    		lw $s2, 4($t9)
+   		  
    		
    		# Se retorna a la función main
    		jr $ra
@@ -125,6 +126,9 @@
 		
 	
 	operar:
+		# Limpia registros
+		jal limpiarRegistros
+		
 		# Cargar nombres de operadores
 		la $t8, sumaOp
 		lb $t8, 0($t8)
@@ -135,8 +139,9 @@
 		lb $t9, 0($t9)
     		beq $t9, $t8, suma  # Comparar con el valor ASCII '+' (43), Si el usuario seleccionó una suma, lleva al usuario a hacer la suma
     		
-    		li $t1, '-'   # Cargar el símbolo "-" en el registro $t1
-    		#beq operador, $t1, resta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
+    		la $t8, restaOp
+		lb $t8, 0($t8)
+    		beq $t8, $t9, resta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
     		
     		li $t1, '*'   # Cargar el símbolo "*" en el registro $t1
     		#beq operador, $t1, multiplicacion  # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
@@ -145,16 +150,33 @@
     		#beq operador, $t1, division  # Si el usuario seleccionó una division, lleva al usuario a hacer la division
     		
 		jr $ra
+		
+	limpiarRegistros:
+		# Limpiar registros
+    		add $t0, $zero, $zero   # Limpiar registro $t0
+    		add $t1, $zero, $zero   # Limpiar registro $t1
+    		add $t2, $zero, $zero   # Limpiar registro $t2
+    		add $t3, $zero, $zero   # Limpiar registro $t3
+    		add $t4, $zero, $zero   # Limpiar registro $t4
+    		add $t5, $zero, $zero   # Limpiar registro $t5
+    		add $t6, $zero, $zero   # Limpiar registro $t6
+    		add $t7, $zero, $zero   # Limpiar registro $t7
+    		add $t8, $zero, $zero   # Limpiar registro $t8
+    		add $t9, $zero, $zero   # Limpiar registro $t9
+    		jr $ra
 	
 	suma:
+		# Se limpian nuevamente los registros
+		jal limpiarRegistros
+		
 		# Se obtiene la dirección de memoria
-   		lw $t0, direccion1          # Cargar la dirección de memoria de lista1 en $t0
-		lw $t1, direccion2          # Cargar la dirección de memoria de lista2 en $t1
+   		la $t0, 0x100100a0          # Cargar la dirección de memoria de lista1 en $t0
+		la $t1, 0x100100c0         # Cargar la dirección de memoria de lista2 en $t1
 		la $t2, signos          # Cargar la dirección de memoria de signos en $t2
-		la $t3, acarreos        # Cargar la dirección de memoria de acarreos en $t3
+		la $t3, 0x10010180        # Cargar la dirección de memoria de acarreos en $t3
 		li $t4, 0               # Inicializar el índice del bucle en 0
 		li $t5, 10              # Valor constante 10
-		la $t6, direccion3      # Dirección de memoria para guardar el resultado
+		la $t6, 0x100100e0      # Dirección de memoria para guardar el resultado
 
 		 # Bucle "for" para recorrer las listas
 		loop:
@@ -163,7 +185,7 @@
 			lw $t8, 0($t1)              # Cargar lista2[i] en $t8
 			lb $t9, 0($t2)              # Cargar signos[0] en $t9
 
-			beq $t4, 3, exit            # Salir del bucle si se ha alcanzado el final de las listas
+			beq $t4, 7, exit            # Salir del bucle si se ha alcanzado el final de las listas
 
 			# Comprobar el valor del signo
 			beq $t9, 43, add_operation  # Comparar con el valor ASCII '+' (43)
@@ -173,6 +195,7 @@
 			# Suma
 			add $t7, $t7, $t8           # lista1[i] + lista2[i]
 			lw $t9, 0($t3)              # Cargar acarreos[i] en $t9
+			
 			add $t7, $t7, $t9           # Sumar el acarreo al resultado
 
 			bge $t7, $t5, carry_check   # Comprobar si la suma es mayor o igual a 10
@@ -217,6 +240,7 @@
 			j loop                      # Volver al inicio del bucle
 
 
+   	resta:
    		
    		
 		
