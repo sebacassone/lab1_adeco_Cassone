@@ -12,9 +12,13 @@
 	
 	# Se utiliza para los acarreos en la suma
 	direccionAcarreos: .word 0x10010180
-	signos: .asciiz "++"
+	signos: .space 1
 	
 	# Se guardan los signos que se ocupan los operando
+	plus_minus: .asciiz "+-"
+   	minus_plus: .asciiz "-+"
+    	minus_minus: .asciiz "--"
+    	plus_plus: .asciiz "++"
 	
 	# Se utiliza para almacenar el numero invertido en la memoria
 	direccion1: .word 0x100100a0
@@ -34,7 +38,7 @@
 		jal cargarEnMemoriaOperandos
 		jal entrada
 		jal operar
-		jal mostrarResultado
+#		jal mostrarResultado
 		jal exit
 		
 	cargarEnMemoriaOperandos:
@@ -84,9 +88,8 @@
    		sw $t8, 24($t5)
    		  		
    		# Se guarda los signos del operando 1 y 2
-   		la $t9, signos
-   		lw $s1, 0($t9)
-   		lw $s2, 4($t9)
+   		li $s1, 0
+   		li $s2, 0
    		  
    		
    		# Se retorna a la función main
@@ -141,16 +144,15 @@
     		
     		la $t8, restaOp
 		lb $t8, 0($t8)
-    		beq $t8, $t9, sumaResta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
+    		beq $t8, $t9, resta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
     		
     		li $t1, '*'   # Cargar el símbolo "*" en el registro $t1
-    		lb $t8, 0($t8)
-    		beq $t8, $t9, multiplicacionOp # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
+    		#beq operador, $t1, multiplicacion  # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
     		
-    		#li $t1, '/'   # Cargar el símbolo "/" en el registro $t1
+    		li $t1, '/'   # Cargar el símbolo "/" en el registro $t1
     		#beq operador, $t1, division  # Si el usuario seleccionó una division, lleva al usuario a hacer la division
     		
-		j exit
+		jr $ra
 		
 	limpiarRegistros:
 		# Limpiar registros
@@ -165,8 +167,57 @@
     		add $t8, $zero, $zero   # Limpiar registro $t8
     		add $t9, $zero, $zero   # Limpiar registro $t9
     		jr $ra
+    		
+    	obtenerSignos:
+    		# Suponiendo que $s0 contiene el valor de la primera condición (0 o 1)
+   		# Suponiendo que $s1 contiene el valor de la segunda condición (0 o 1)
+    		# Suponiendo que $t1 se utilizará para almacenar el resultado
+		la $t9, signos
+
+    		beq $s1, $zero, check_s2      # Si $s1 es igual a 0, saltar a la comprobación de $s2
+
+    		# Si $s1 es igual a 1
+    		beq $s2, $zero, condition_3   # Si $s2 es igual a 0, saltar a la condición 3
+    		la $t1, minus_minus           # Cargar la dirección de memoria de "minus_minus" en $t0
+    		sw $t1, 0($t9)                # Cargar el valor de la dirección de memoria en $t1
+    		jr $ra           # Saltar al final de las condiciones
+
+		check_s2:
+    			beq $s2, $zero, condition_1   # Si $s2 es igual a 0, saltar a la condición 1
+
+    			# Si $s1 y $s2 son diferentes de 0
+    			la $t1, plus_minus                # Cargar la dirección de memoria de "plus_minus" en $t1
+    			lb $t1, 0($t1)                    # Cargar el valor de la dirección de memoria en $t1
+    			sw $t1, 0($t9)                    # Guardar el valor en "signos"
+    			jr $ra           # Saltar al final de las condiciones
+
+		condition_1:
+    			# Si $s1 es igual a 0 y $s2 es igual a 1
+    			la $t1, plus_plus             # Cargar la dirección de memoria de "plus_plus" en $t0
+    			sw $t1, 0($t9)
+    			jr $ra             # Saltar al final de las condiciones
+
+		condition_3:
+    			# Si $s1 es igual a 1 y $s2 es igual a 0
+    			la $t1, minus_plus            # Cargar la dirección de memoria de "minus_plus" en $t0
+    			sw $t1, 0($t9)
+    			jr $ra
+
+    # Resto del código...
+
+    # Terminar el programa
+    li $v0, 10    
+
 	
 	sumaResta:
+		# Se obtiene los signos
+		jal obtenerSignos
+    		
+    		# Se obtiene los signos
+		li $v0, 4
+		la $a0, signos
+		syscall 
+
 		# Se limpian nuevamente los registros
 		jal limpiarRegistros
 		
@@ -186,7 +237,7 @@
 			lw $t8, 0($t1)              # Cargar lista2[i] en $t8
 			lb $t9, 0($t2)              # Cargar signos[0] en $t9
 
-			beq $t4, 7, mostrarResultado            # Salir del bucle si se ha alcanzado el final de las listas
+			beq $t4, 7, exit            # Salir del bucle si se ha alcanzado el final de las listas
 
 			# Comprobar el valor del signo
 			beq $t9, 43, add_operation  # Comparar con el valor ASCII '+' (43)
@@ -241,116 +292,14 @@
 			j loop                      # Volver al inicio del bucle
 
 
-	multiplicar:
-        	beqz $t1, end_loop      # Si el multiplicador es cero, salir del bucle
-
-        	add $t2, $t2, $t0       # Sumar el multiplicando al acumulador
-        	addi $t1, $t1, -1       # Restar 1 al multiplicador
-
-        	j multiplicar                  # Volver al inicio del bucle
-
-    	end_loop:
-        	# El resultado está en $t2
-        	jr $ra
+   	resta:
+   		
+   		
 		
-   	numerosSeparados:
-   		# Se lee de la memoria los 4 primeros números
-   		la $t0, 0x100100a0
-   		lw $t3, 0($s0) # Unidad
-		
-   		# Concatena los 4 números separados por cifras
-   		# Para la decena
-   		lw $t1, 4($s0) # Decena
-   		addi $t2, $t2, 10
-   		jal multiplicar
-   		add $t9, $t2, $t3
-   		
-   		# Para la centena
-   		lw $t1, 8($s0) # Centena
-   		addi $t2, $t2, 90
-   		jal multiplicar
-   		addi $t9, $t2, 0
-   		
-   		# Para la unidad de mil
-   		lw $t1, 12($s0) # Unidad de mil
-   		addi $t2, $t2, 900
-   		jal multiplicar
-   		addi $t9, $t2, 0
-   		
-   		# Se lee de la memoria los 4 primeros números del segundo número
-   		la $t0, 0x100100c0
-   		lw $t3, 0($s0) # Unidad
-		
-   		# Concatena los 4 números separados por cifras
-   		# Para la decena
-   		lw $t1, 4($s0) # Decena
-   		addi $t2, $t2, 10
-   		jal multiplicar
-   		add $t8, $t2, $t3
-   		
-   		# Para la centena
-   		lw $t1, 8($s0) # Centena
-   		addi $t2, $t2, 90
-   		jal multiplicar
-   		add $t8, $t2, $t8
-   		
-   		# Para la unidad de mil
-   		lw $t1, 12($s0) # Unidad de mil
-   		addi $t2, $t2, 900
-   		jal multiplicar
-   		add $t8, $t2, $t8
-   	
-   	multiplicarNumeros:
-        	beqz $t8, end_loop_numeros      # Si el multiplicador es cero, salir del bucle
-
-        	add $t9, $t9, $t0       # Sumar el multiplicando al acumulador
-        	addi $t8, $t8, -1       # Restar 1 al multiplicador
-
-        	j multiplicarNumeros                 # Volver al inicio del bucle
-
-    	end_loop_numeros:
-        	# El resultado está en $t2
-        	jr $ra
-        	
-        separarNumero:
-        	li $t4, 0
-        	la $t0, 0x100100e0
-        	loopSepararNumero:
-        		beq $t4, 4, mostrarResultado
-        		# Se encarga de separar nuevamente el número
-        		rem $t3, $t1, 10     # Obtener el último dígito del número
-    			addi $t1, $t1, -10   # Restar el último dígito del número
-    		
-    			# Obtiene la dirección de memoria
-    			sw $t3, 0($t0)
-    			
-    			addi $t4, $t4, 1
-    			addi $t0, $t0, 4
-    			
-    			j loopSepararNumero
-    		
-   	multiplicacion:
-   		jal numerosSeparados
-   		jal multiplicarNumeros # Entrada $t8 y $t9
-   		jal separarNumero # Entrada $t9
-   		
-	mostrarResultado:
-		# Para mostrar el resultado, se hará un loop para recorrer la memoria imprimiendo el resultado
-		li $t4, 0 # iterador
-		la $t1, 0x100100e0 # Dirección de memoria de la salida
-		loopResultado:
-			beq $t4, 7, exit # Condicional
-			
-			lw $t2, 0($t1) # Carga en memoria el primer elemento desde la dirección de memoria actual
-			
-			li $v0, 1 # Se especifica que la salida será un entero
-			move $a0, $t2 # Se pasa como argumento a la función para que se muestre
-			syscall
-			
-			addi $t4, $t4, 1
-			addi $t1, $t1, 4
-			j loopResultado
-
+	
+#	mostrarResultado:
+	
+	
 	exit:
 		# Carga en V0 la operación de terminar el programa
 		li $v0, 10
