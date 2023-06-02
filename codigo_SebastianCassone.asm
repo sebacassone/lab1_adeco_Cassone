@@ -143,9 +143,9 @@
 		lb $t8, 0($t8)
     		beq $t8, $t9, sumaResta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
     		
-    		li $t1, '*'   # Cargar el símbolo "*" en el registro $t1
+    		la $t8, multiplicacionOp  # Cargar el símbolo "*" en el registro $t1
     		lb $t8, 0($t8)
-    		beq $t8, $t9, multiplicacionOp # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
+    		beq $t8, $t9, multiplicacion # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
     		
     		#li $t1, '/'   # Cargar el símbolo "/" en el registro $t1
     		#beq operador, $t1, division  # Si el usuario seleccionó una division, lleva al usuario a hacer la division
@@ -256,46 +256,46 @@
    	numerosSeparados:
    		# Se lee de la memoria los 4 primeros números
    		la $t0, 0x100100a0
-   		lw $t3, 0($s0) # Unidad
+   		lw $t3, 0($t0) # Unidad
 		
    		# Concatena los 4 números separados por cifras
    		# Para la decena
-   		lw $t1, 4($s0) # Decena
+   		lw $t1, 4($t0) # Decena
    		addi $t2, $t2, 10
    		jal multiplicar
    		add $t9, $t2, $t3
    		
    		# Para la centena
-   		lw $t1, 8($s0) # Centena
+   		lw $t1, 8($t0) # Centena
    		addi $t2, $t2, 90
    		jal multiplicar
    		addi $t9, $t2, 0
    		
    		# Para la unidad de mil
-   		lw $t1, 12($s0) # Unidad de mil
+   		lw $t1, 12($t0) # Unidad de mil
    		addi $t2, $t2, 900
    		jal multiplicar
    		addi $t9, $t2, 0
    		
    		# Se lee de la memoria los 4 primeros números del segundo número
    		la $t0, 0x100100c0
-   		lw $t3, 0($s0) # Unidad
+   		lw $t3, 0($t0) # Unidad
 		
    		# Concatena los 4 números separados por cifras
    		# Para la decena
-   		lw $t1, 4($s0) # Decena
+   		lw $t1, 4($t0) # Decena
    		addi $t2, $t2, 10
    		jal multiplicar
    		add $t8, $t2, $t3
    		
    		# Para la centena
-   		lw $t1, 8($s0) # Centena
+   		lw $t1, 8($t0) # Centena
    		addi $t2, $t2, 90
    		jal multiplicar
    		add $t8, $t2, $t8
    		
    		# Para la unidad de mil
-   		lw $t1, 12($s0) # Unidad de mil
+   		lw $t1, 12($t0) # Unidad de mil
    		addi $t2, $t2, 900
    		jal multiplicar
    		add $t8, $t2, $t8
