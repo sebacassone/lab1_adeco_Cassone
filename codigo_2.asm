@@ -1,102 +1,7 @@
-.data
-	# Mensajes para el menu para pedirle al usuario que ingrese la debida operacion
-	titulo: .asciiz "Hola, bienvenide a la calculadora arcaica\n"
-	operacion1: .asciiz "Escriba + para sumar\n"
-	operacion2: .asciiz "Escriba - para restar\n"
-	operacion3: .asciiz "Escriba * para multiplicar\n"
-	operacion4: .asciiz "Escriba / para dividir\n"
-	mensaje1: .asciiz "Ingrese la operacion que desea realizar: "
-	
-	# Se utiliza para guardar el operador
-	operador: .space 3
-	
-	# Se utiliza para los acarreos en la suma
-	direccionAcarreos: .word 0x10010180
-	signos: .space 1
-	
-	# Se guardan los signos que se ocupan los operando
-	plus_minus: .asciiz "+-"
-   	minus_plus: .asciiz "-+"
-    	minus_minus: .asciiz "--"
-    	plus_plus: .asciiz "++"
-	
-	# Se utiliza para almacenar el numero invertido en la memoria
-	direccion1: .word 0x100100a0
-	operando1: .word 0x00000001, 0x00000002, 0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000
-	direccion2: .word 0x100100c0
-	operando2: .word 0x00000005, 0x00000009, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000
-	direccion3: .word 0x100100e0
-	
-	# operaciones
-	sumaOp: .asciiz "+"
-	restaOp: .asciiz "-"
-	multiplicacionOp: .asciiz "*"
-	divisionOp: .asciiz "/"
-	
-.text
-	main:
-		jal cargarEnMemoriaOperandos
-		jal entrada
-		jal operar
-#		jal mostrarResultado
-		jal exit
-		
-	cargarEnMemoriaOperandos:
-		# Se carga en memoria el primer número, para efectos prácticos se tienen que modificar mediante código
-		# Se tomará el número 4321, aunque puede ser un número con n cantidad de cifras.
-		# Cargar los operandos desde el segmento de datos
-    		la $t0, operando1         # Cargar la dirección base de los operandos en $t0
-    		lw $t1, 0($t0)            # Cargar el primer operando en $t1
-    		lw $t2, 4($t0)            # Cargar el segundo operando en $t2
-   		lw $t3, 8($t0)            # Cargar el tercer operando en $t3
-   		lw $t4, 12($t0)           # Cargar el cuarto operando en $t4
-   		lw $t6, 16($t0)           # Cargar el cuarto operando en $t6
-   		lw $t7, 20($t0)           # Cargar el cuarto operando en $t7
-   		lw $t8, 24($t0)           # Cargar el cuarto operando en $t8
-   		
-   		# Se obtiene la dirección de memoria
-   		lw $t5, direccion1
-   		# Guardar los operandos en memoria con su respectiva dirección
-   		sw $t1, 0($t5)
-   		sw $t2, 4($t5)
-   		sw $t3, 8($t5)
-   		sw $t4, 12($t5)
-   		sw $t6, 16($t5)
-   		sw $t7, 20($t5)
-   		sw $t8, 24($t5)
-   		
-   		# Ahora se hace lo mismo con el segundo operando
-   		# Cargar los operandos desde el segmento de datos
-    		la $t0, operando2         # Cargar la dirección base de los operandos en $t0
-    		lw $t1, 0($t0)            # Cargar el primer operando en $t1
-    		lw $t2, 4($t0)            # Cargar el segundo operando en $t2
-   		lw $t3, 8($t0)            # Cargar el tercer operando en $t3
-   		lw $t4, 12($t0)           # Cargar el cuarto operando en $t4
-   		lw $t6, 16($t0)           # Cargar el cuarto operando en $t6
-   		lw $t7, 20($t0)           # Cargar el cuarto operando en $t7
-   		lw $t8, 24($t0)           # Cargar el cuarto operando en $t8
-   		
-   		# Se obtiene la dirección de memoria
-   		lw $t5, direccion2
-   		# Guardar los operandos en memoria con su respectiva dirección
-   		sw $t1, 0($t5)
-   		sw $t2, 4($t5)
-   		sw $t3, 8($t5)
-   		sw $t4, 12($t5)
-   		sw $t6, 16($t5)
-   		sw $t7, 20($t5)
-   		sw $t8, 24($t5)
-   		  		
-   		# Se guarda los signos del operando 1 y 2
-   		li $s1, 0
-   		li $s2, 0
-   		  
-   		
-   		# Se retorna a la función main
-   		jr $ra
-   		
-   		
 	entrada:
+		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
 		# Muestra el menú, primero muestra el título
 		li $v0, 4
 		la $a0, titulo
@@ -119,42 +24,20 @@
 		la $a0, mensaje1
 		syscall
 		# Captura la operacion ingresada por el usuario
-		li $v0, 8 # Para capturar un string
-		la $a0, operador
-		li $a1, 3
+		li $v0, 5
 		syscall
 		
-		# Retorna a la función principal
-		jr $ra
+		move $s7, $v0
 		
-	
-	operar:
-		# Limpia registros
-		jal limpiarRegistros
-		
-		# Cargar nombres de operadores
-		la $t8, sumaOp
-		lb $t8, 0($t8)
-		
-		# Se hace la distinción de casos, para la suma, resta, multiplicación y división.
-		# Se obtiene el operador
-		la $t9, operador
-		lb $t9, 0($t9)
-    		beq $t9, $t8, sumaResta  # Comparar con el valor ASCII '+' (43), Si el usuario seleccionó una suma, lleva al usuario a hacer la suma
-    		
-    		la $t8, restaOp
-		lb $t8, 0($t8)
-    		beq $t8, $t9, resta  # Si el usuario seleccionó una resta, lleva al usuario a hacer la resta
-    		
-    		li $t1, '*'   # Cargar el símbolo "*" en el registro $t1
-    		#beq operador, $t1, multiplicacion  # Si el usuario seleccionó una multiplicacion, lleva al usuario a hacer la multiplicacion
-    		
-    		li $t1, '/'   # Cargar el símbolo "/" en el registro $t1
-    		#beq operador, $t1, division  # Si el usuario seleccionó una division, lleva al usuario a hacer la division
-    		
-		jr $ra
-		
-	limpiarRegistros:
+		# Vuelve a la función de donde se invocó esta función
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+   		jr $ra
+			
+	limpiarRegistrosTemporales:
+		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
 		# Limpiar registros
     		add $t0, $zero, $zero   # Limpiar registro $t0
     		add $t1, $zero, $zero   # Limpiar registro $t1
@@ -166,141 +49,253 @@
     		add $t7, $zero, $zero   # Limpiar registro $t7
     		add $t8, $zero, $zero   # Limpiar registro $t8
     		add $t9, $zero, $zero   # Limpiar registro $t9
-    		jr $ra
-    		
-    	obtenerSignos:
-    		# Suponiendo que $s0 contiene el valor de la primera condición (0 o 1)
-   		# Suponiendo que $s1 contiene el valor de la segunda condición (0 o 1)
-    		# Suponiendo que $t1 se utilizará para almacenar el resultado
-		la $t9, signos
-
-    		beq $s1, $zero, check_s2      # Si $s1 es igual a 0, saltar a la comprobación de $s2
-
-    		# Si $s1 es igual a 1
-    		beq $s2, $zero, condition_3   # Si $s2 es igual a 0, saltar a la condición 3
-    		la $t1, minus_minus           # Cargar la dirección de memoria de "minus_minus" en $t0
-    		sw $t1, 0($t9)                # Cargar el valor de la dirección de memoria en $t1
-    		jr $ra           # Saltar al final de las condiciones
-
-		check_s2:
-    			beq $s2, $zero, condition_1   # Si $s2 es igual a 0, saltar a la condición 1
-
-    			# Si $s1 y $s2 son diferentes de 0
-    			la $t1, plus_minus                # Cargar la dirección de memoria de "plus_minus" en $t1
-    			lb $t1, 0($t1)                    # Cargar el valor de la dirección de memoria en $t1
-    			sw $t1, 0($t9)                    # Guardar el valor en "signos"
-    			jr $ra           # Saltar al final de las condiciones
-
-		condition_1:
-    			# Si $s1 es igual a 0 y $s2 es igual a 1
-    			la $t1, plus_plus             # Cargar la dirección de memoria de "plus_plus" en $t0
-    			sw $t1, 0($t9)
-    			jr $ra             # Saltar al final de las condiciones
-
-		condition_3:
-    			# Si $s1 es igual a 1 y $s2 es igual a 0
-    			la $t1, minus_plus            # Cargar la dirección de memoria de "minus_plus" en $t0
-    			sw $t1, 0($t9)
-    			jr $ra
-
-    # Resto del código...
-
-    # Terminar el programa
-    li $v0, 10    
-
+    		# Vuelve a la función de donde se invocó esta función
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+   		jr $ra
 	
-	sumaResta:
-		# Se obtiene los signos
-		jal obtenerSignos
-    		
-    		# Se obtiene los signos
-		li $v0, 4
-		la $a0, signos
-		syscall 
+	resta:
+    		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+   		sub $t5, $t1, $t2    # Add the contents of $t1 and $t2 and store the result in $t5
+    		# Vuelve a la función de donde se invocó esta función
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+   		jr $ra
+   		
+	multiplicacion:
+		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+		add $t5, $zero, $zero        # Initialize the result to 0
+  		add $t3, $zero, $t2          # Store the multiplier in $t3
+  		add $t4, $zero, $t1          # Store the multiplicand in $t4
 
-		# Se limpian nuevamente los registros
-		jal limpiarRegistros
+  		Loop:
+    			beqz $t3, EndLoop          # If the multiplier is 0, exit the loop
+
+    			add $t5, $t5, $t4          # Add the multiplicand to the result
+
+    			addi $t3, $t3, -1          # Decrement the multiplier by 1
+
+    			j Loop                     # Jump back to the beginning of the loop
+
+  		EndLoop:
+  			# The final result is stored in $t5
+  			lw $ra, 0($sp)
+			addi $sp, $sp, 4
+   			jr $ra
+  			
 		
-		# Se obtiene la dirección de memoria
-   		la $t0, 0x100100a0          # Cargar la dirección de memoria de lista1 en $t0
-		la $t1, 0x100100c0         # Cargar la dirección de memoria de lista2 en $t1
-		la $t2, signos          # Cargar la dirección de memoria de signos en $t2
-		la $t3, 0x10010180        # Cargar la dirección de memoria de acarreos en $t3
-		li $t4, 0               # Inicializar el índice del bucle en 0
-		li $t5, 10              # Valor constante 10
-		la $t6, 0x100100e0      # Dirección de memoria para guardar el resultado
-
-		 # Bucle "for" para recorrer las listas
-		loop:
-			# Comparar el índice con la longitud de la lista1
-			lw $t7, 0($t0)              # Cargar lista1[i] en $t7
-			lw $t8, 0($t1)              # Cargar lista2[i] en $t8
-			lb $t9, 0($t2)              # Cargar signos[0] en $t9
-
-			beq $t4, 7, exit            # Salir del bucle si se ha alcanzado el final de las listas
-
-			# Comprobar el valor del signo
-			beq $t9, 43, add_operation  # Comparar con el valor ASCII '+' (43)
-			beq $t9, 45, sub_operation  # Comparar con el valor ASCII '-' (45)
-
-		add_operation:
-			# Suma
-			add $t7, $t7, $t8           # lista1[i] + lista2[i]
-			lw $t9, 0($t3)              # Cargar acarreos[i] en $t9
+	cargarEnMemoriaOperandoUno:
+		# Guarda en memoria la dirección para volver a la función principal
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+	
+		# Comienza a obtener los números en memoria
+		# -------------- Posicion 0 -------------
+		# Se carga en memoria un cero para comenzar a recorrer la memoria 
+		la $t0, 0x100100a0
+		
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 1
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t6, $t5
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 1 -------------
+		# Luego va a buscar en la posición uno de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 10
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		# -------------- Posicion 2 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 100
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 3 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 1000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 4 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 10000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 5 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 100000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 6 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+                li $t2, 1000000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# ------------ Fin posiciones --------
+		# Se obtiene finalmente el número sin el signo
+		move $s4, $t6
+		
+		# Se cambia el signo en caso de ser necesario
+		beqz $s1, finCargarEnMemoriaUno
+		sub $s4, $zero, $s4
+		
+		# Se retorna a la función main
+		finCargarEnMemoriaUno:
+   			lw $ra, 0($sp)
+			addi $sp, $sp, 4
+   			jr $ra
+   		
+   	cargarEnMemoriaOperandoDos:
+		# Guarda en memoria la dirección para volver a la función principal
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+	
+		# Comienza a obtener los números en memoria
+		# -------------- Posicion 0 -------------
+		# Se carga en memoria un cero para comenzar a recorrer la memoria 
+		la $t0, 0x100100c0
+		
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 1
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t6, $t5
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 1 -------------
+		# Luego va a buscar en la posición uno de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 10
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		# -------------- Posicion 2 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 100
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 3 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 1000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 4 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 10000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 5 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 100000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
+		
+		# -------------- Posicion 6 -------------
+		# Luego va a buscar en la posición dos de la dirección de memoria 0x100100a0
+		lw $t1, 0($t0)
+		li $t2, 1000000
+		jal multiplicacion
+		
+		# Luego de esto se suma el resultado de la multiplicación siendo $t5 lo suma a $t6
+		add $t6, $t5, $t6
+		
+		# Avanza en la posición de memoria
+		addi $t0, $t0, 4
 			
-			add $t7, $t7, $t9           # Sumar el acarreo al resultado
-
-			bge $t7, $t5, carry_check   # Comprobar si la suma es mayor o igual a 10
-
-			# Sin acarreo
-			sw $t7, 0($t6)              # Guardar el resultado en la dirección de memoria $t6
-			li $t9, 0                   # Establecer el acarreo en 0
-			sw $t9, 0($t3)              # Guardar el acarreo en la dirección de memoria acarreos[i]
-			j next_iteration            # Saltar a la siguiente iteración del bucle
-
-		carry_check:
-			sub $t7, $t7, $t5           # Restar 10 al resultado
-			li $t9, 1                   # Establecer el acarreo en 1
-			sw $t7, 0($t6)              # Guardar el resultado en la dirección de memoria $t6
-			sw $t9, 0($t3)              # Guardar el acarreo en la dirección de memoria acarreos[i]
-			j next_iteration            # Saltar a la siguiente iteración del bucle
-
-		sub_operation:
-			# Resta
-			sub $t7, $t8, $t7           # lista2[i] - lista1[i]
-			bltz $t7, negative_check     # Comprobar si la resta es menor que 0
-
-			# Sin acarreo
-			sw $t7, 0($t6)              # Guardar el resultado en la dirección de memoria $t6
-			li $t9, 0                   # Establecer el acarreo en 0
-			sw $t9, 0($t3)              # Guardar el acarreo en la dirección de memoria acarreos[i]
-			j next_iteration            # Saltar a la siguiente iteración del bucle
-
-		negative_check:
-			addi $t7, $t7, 10           # Sumar 10 al resultado
-			sw $t7, 0($t6)              # Guardar el resultado en la dirección de memoria $t6
-			li $t9, 1                   # Establecer el acarreo en 1
-			sw $t9, 0($t3)              # Guardar el acarreo en la dirección de memoria acarreos[i]
-
-		next_iteration:
-			addi $t0, $t0, 4            # Avanzar a la siguiente posición en lista1
-			addi $t1, $t1, 4            # Avanzar a la siguiente posición en lista2
-			addi $t2, $t2, 1            # Avanzar a la siguiente posición en signos
-			addi $t3, $t3, 4            # Avanzar a la siguiente posición en acarreos
-			addi $t4, $t4, 1            # Incrementar el índice del bucle en 1
-			addi $t6, $t6, 4            # Avanzar a la siguiente dirección de memoria para guardar el resultado
-			j loop                      # Volver al inicio del bucle
-
-
-   	resta:
-   		
-   		
+		# ------------ Fin posiciones --------
+		# Se obtiene finalmente el número sin el signo
+		move $s5, $t6
 		
-	
-#	mostrarResultado:
-	
-	
-	exit:
-		# Carga en V0 la operación de terminar el programa
-		li $v0, 10
-		syscall # Ejecuta la función cargada en v0
+		# Se cambia el signo en caso de ser necesario
+		beqz $s2, finCargarEnMemoriaDos
+		sub $s5, $zero, $s5
+		
+		# Se retorna a la función main
+		finCargarEnMemoriaDos:
+   			lw $ra, 0($sp)
+			addi $sp, $sp, 4
+   			jr $ra
