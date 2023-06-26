@@ -21,13 +21,14 @@
 		# Se mueve registros $s4 y $s5 a $t1 y $t2
 		move $t1, $s4
 		move $t2, $s5
-		li $t9, 0 # Para la división
 		
 		# Se realiza alguna de las operaciones
 		jal sumaOperacion
 		jal restaOperacion
 		jal multiplicacionOperacion
 		jal divisionOperacion
+		
+		# Ahora se imprime el resultado
 		
 		jal exit
 				
@@ -106,27 +107,104 @@
 		jr $ra
 
 	divisionOperacion:
-		beq $s7, 4, division
-		beqz $t7, finDivisorOperacion
-		# Se rescata el divisor original y lo guarda en $t8
-		move $t8, $t2
-		# Rescata el resultado original en $t5 y lo guarda en $t6
-		move $t6, $t5
-		# Se pasa el resto $t7 a $t1 multiplicado por 10
-		move $t1, $t7
-		li $t2, 10
-		jal multiplicacion
+		# Verifica si es una division
+		beq $s7, 4, divisionOp
+		jr $ra
 		
-		# Reemplaza el dividendo por $t5 el resultado de la multiplicacion
-		move $t1, $t5
-		
-		
-		# Si el resultado supera los 4 decimales
-		add $t9, $t9, 1
-		bne $t9, 4, finDivisonOperacion
-		
-		finDivisionOperacion:
+		divisionOp:
+			addi $sp, $sp, -4
+			sw $ra, 0($sp)
+			jal division
+			# Se quiere obtener la parte decimal. Se tiene que
+			# $t7 = resto, $t5 = cociente, $t2 = divisor, $t1 = dividendo
+			# Todos estso registros se obtuvieron de jal division
+			# Se quiere un maximo de 4 decimales
+			# Se multiplica el resto por 10
+			# Ahora se le pasa el resto y se multiplica por 10, en jal multiplicacion
+			# se usa $t1 y $t2, no se debe perder el divisor
+			# Se guarda el resultado en $t9
+			# Se rescata el valor de $t2, y $t5
+			move $t6, $t2 # Se guarda el divisor
+			move $a0, $t5 # El resultado original
+
+			# Luego se multiplica el resto por 10 el resto
+			move $t1, $t7
+			li $t2, 10
+			jal multiplicacion
+
+			# Luego se reemplaza el valor de $t5 siendo ahora el resultado de la multiplicacion
+			# en $t1.
+			move $t1, $t5
+			move $t2, $t6 # Se reemplaza $t2 de la multiplicación por el divisor
+			jal division
+
+			# Se guarda el resultado de la división en $t9 multiplicado por 1000
+			move $t1, $t5
+			li $t2, 1000
+			jal multiplicacion
+			move $t9, $t5
+
+			# Se multiplica el resto por 10
+			move $t1, $t7
+			li $t2, 10
+			jal multiplicacion
+
+			# Se reemplaza el valor de $t5 siendo ahora el resultado de la multiplicacion
+			# en $t1.
+			move $t1, $t5
+			move $t2, $t6 # Se reemplaza $t2 de la multiplicación por el divisor
+			jal division
+
+			# Se guarda el resultado de la división en $t9 multiplicado por 100
+			move $t1, $t5
+			li $t2, 100
+			jal multiplicacion
+			add $t9, $t9, $t5
+
+			# Se multiplica el resto por 10
+			move $t1, $t7
+			li $t2, 10
+			jal multiplicacion
+
+			# Se reemplaza el valor de $t5 siendo ahora el resultado de la multiplicacion
+			# en $t1.
+			move $t1, $t5
+			move $t2, $t6 # Se reemplaza $t2 de la multiplicación por el divisor
+			jal division
+
+			# Se guarda el resultado de la división en $t9 multiplicado por 10
+			move $t1, $t5
+			li $t2, 10
+			jal multiplicacion
+			add $t9, $t9, $t5
+
+			# Se multiplica el resto por 10
+			move $t1, $t7
+			li $t2, 10
+			jal multiplicacion
+
+			# Se reemplaza el valor de $t5 siendo ahora el resultado de la multiplicacion
+			# en $t1.
+			move $t1, $t5
+			move $t2, $t6 # Se reemplaza $t2 de la multiplicación por el divisor
+			jal division
+
+			# Se guarda el resultado de la division en $t9 multiplicado por 1
+			add $t9, $t9, $t5
+
+			# Finalmente se obtiene el resultado de la division original
+			move $t5, $a0
+			move $s7, $t9 # El número con la parte decimal
+			
+			# Se retorna a la subrutina principal
+			lw $ra, 0($sp)
+			addi $sp, $sp, 4
+   			jr $ra
+			
+		finDivisorOperacion:
 			jr $ra
+			
+			
 		# Si $t1 > $t2, ingresa a la subrutina divisionUno
 		division:
 			bgt $t1, $t2, divisionUno
