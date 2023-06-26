@@ -148,7 +148,7 @@
 		# -------------- Posicion 0 -------------
 		# Se carga en memoria un cero para comenzar a recorrer la memoria 
 		la $t0, 0x10010100
-		addi $t0, $t0, 16
+		addi $t0, $t0, 12
 		
 		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
 		move $t1, $t9
@@ -324,7 +324,6 @@
 			
 			# Se comienza la division
 			jal division
-			beqz $t7, finDecimalesDivision
 			# Se quiere obtener la parte decimal. Se tiene que
 			# $t7 = resto, $t5 = cociente, $t2 = divisor, $t1 = dividendo
 			# Todos estso registros se obtuvieron de jal division
@@ -336,6 +335,7 @@
 			# Se rescata el valor de $t2, y $t5
 			move $t6, $t2 # Se guarda el divisor
 			move $s6, $t5 # El resultado original
+			beqz $t7, finDecimalesDivision
 
 			# Luego se multiplica el resto por 10 el resto
 			move $t1, $t7
