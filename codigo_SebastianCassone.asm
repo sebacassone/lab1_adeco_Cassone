@@ -1,22 +1,15 @@
 .data
 	# Mensajes para el menu para pedirle al usuario que ingrese la debida operacion
-	titulo: .asciiz "Hola, bienvenide a la calculadora arcaica\n"
-	operacion1: .asciiz "Escriba 1 para sumar\n"
-	operacion2: .asciiz "Escriba 2 para restar\n"
-	operacion3: .asciiz "Escriba 3 para multiplicar\n"
-	operacion4: .asciiz "Escriba 4 para dividir\n"
-	mensaje1: .asciiz "Ingrese la operacion que desea realizar: "
+	titulo: .asciiz "1.- Para sumar \n2.- Para Restar \n3.- Para multiplicar \n4.- Para dividir \nEliga: "
+	punto: .asciiz "."
 	
 .text
 	main:
-		#jal entrada
-		#jal cargarEnMemoriaOperandoUno
-		#jal limpiarRegistrosTemporales
-		#jal cargarEnMemoriaOperandoDos
-		#jal limpiarRegistrosTemporales
-		li $s4, 1
-		li $s5, 4
-		li $s7, 4
+		jal entrada
+		jal cargarEnMemoriaOperandoUno
+		jal limpiarRegistrosTemporales
+		jal cargarEnMemoriaOperandoDos
+		jal limpiarRegistrosTemporales
 		
 		# Se mueve registros $s4 y $s5 a $t1 y $t2
 		move $t1, $s4
@@ -28,10 +21,201 @@
 		jal multiplicacionOperacion
 		jal divisionOperacion
 		
-		# Ahora se imprime el resultado
+		# Cambia el signo en la multiplicacion
+		jal cambiarSignoMultiplicacion
+		
+		# Ahora se imprime el resultado si no es division
+		jal imprimirResultado
+		
+		# Guarda el resultado entero en memoria
+		jal guardarResultadoEnMemoria
+		
+		# Guarda los decimales en memoria
+		jal guardarDecimalesEnMemoria
 		
 		jal exit
+			
+			
+	guardarResultadoEnMemoria:
+		# Luego, se comienza a guardar en memoria el número
+		# Guarda en memoria la dirección para volver a la función principal
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+	
+		# Se obtiene el resultado en valor absoluto
+		move $t1, $t5
+		jal absoluto
+		move $t5, $t1
+		
+		# Comienza a obtener los números en memoria
+		# -------------- Posicion 0 -------------
+		# Se carga en memoria un cero para comenzar a recorrer la memoria 
+		la $t0, 0x100100e0
+		addi $t0, $t0, 24
+		
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 1000000
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 1 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 100000
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 2 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 10000
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 3 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 1000
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 4 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 100
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 5 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 10
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 6 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 1
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# Luego de esto se retorna a la función principal
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+   		jr $ra
 				
+	guardarDecimalesEnMemoria:
+		beq $s7, 4, guardarDecimales
+		jr $ra
+	
+		guardarDecimales:
+		# Luego, se comienza a guardar en memoria el número
+		# Guarda en memoria la dirección para volver a la función principal
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+		
+		# Comienza a obtener los números en memoria
+		# -------------- Posicion 0 -------------
+		# Se carga en memoria un cero para comenzar a recorrer la memoria 
+		la $t0, 0x10010100
+		addi $t0, $t0, 16
+		
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		move $t1, $t9
+		li $t2, 1000
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 1 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 100
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 2 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 10
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# -------------- Posicion 3 -------------
+		# Luego va a buscar en la posición cero de la dirección de memoria 0x100100a0
+		li $t2, 1
+		jal division
+		
+		# Luego de esto de guarda el resultado en la dirección de memoria
+		sw $t5, 0($t0)
+		
+		# Avanza en la posición de memoria
+		subi $t0, $t0, 4
+		
+		# Luego de esto se retorna a la función principal
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+   		jr $ra
+   			
+					
+	imprimirResultado:
+		bne $s7, 4, imprimirResultadoFinal
+		jr $ra
+		imprimirResultadoFinal:
+			# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+			addi $sp, $sp, -4
+			sw $ra, 0($sp)
+				
+			li $v0, 1
+			move $a0, $t5
+			syscall
+			# Vuelve a la función de donde se invocó esta función
+			lw $ra, 0($sp)
+			addi $sp, $sp, 4
+			jr $ra
+			
    	entrada:
 		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
 		addi $sp, $sp, -4
@@ -39,23 +223,6 @@
 		# Muestra el menú, primero muestra el título
 		li $v0, 4
 		la $a0, titulo
-		syscall
-		# Muestra las operaciones
-		li $v0, 4
-		la $a0, operacion1
-		syscall
-		li $v0, 4
-		la $a0, operacion2
-		syscall
-		li $v0, 4
-		la $a0, operacion3
-		syscall
-		li $v0, 4
-		la $a0, operacion4
-		syscall
-		# Muestra el mensaje
-		li $v0, 4
-		la $a0, mensaje1
 		syscall
 		# Captura la operacion ingresada por el usuario
 		li $v0, 5
@@ -105,6 +272,38 @@
    	multiplicacionOperacion:
 		beq $s7, 3, multiplicacion
 		jr $ra
+		
+	cambiarSignoMultiplicacion:
+		beq $s7, 3, cambiarSigno
+		jr $ra
+		
+		cambiarSigno:
+			# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
+			addi $sp, $sp, -4
+			sw $ra, 0($sp)
+			# Se inserta el signo del resultado
+			xor $s3, $s1, $s2
+			# Se cambia el signo en caso de ser necesario
+			beqz $s3, finMultiplicacionEntera
+			sub $t5, $zero, $t5
+			finMultiplicacionEntera:
+				# Se retorna a la subrutina principal
+				lw $ra, 0($sp)
+				addi $sp, $sp, 4
+   				jr $ra
+			
+			
+		
+	absoluto:
+  	 	# Compara el número con cero
+    		bgez $t1, absoluto_fin   # Si es mayor o igual a cero, termina y devuelve el número sin cambios
+
+    		# Si el número es negativo, realiza la operación de negación
+    		subu $t1, $zero, $t1
+
+	absoluto_fin:
+    		jr $ra   # Retorna al llamador
+
 
 	divisionOperacion:
 		# Verifica si es una division
@@ -114,7 +313,18 @@
 		divisionOp:
 			addi $sp, $sp, -4
 			sw $ra, 0($sp)
+			# Se utiliza valor absoluto
+			jal absoluto
+			move $a0, $t1
+			move $t1, $t2
+			jal absoluto
+			move $t2, $t1
+			move $t1, $a0
+			li $a0, 0
+			
+			# Se comienza la division
 			jal division
+			beqz $t7, finDecimalesDivision
 			# Se quiere obtener la parte decimal. Se tiene que
 			# $t7 = resto, $t5 = cociente, $t2 = divisor, $t1 = dividendo
 			# Todos estso registros se obtuvieron de jal division
@@ -125,7 +335,7 @@
 			# Se guarda el resultado en $t9
 			# Se rescata el valor de $t2, y $t5
 			move $t6, $t2 # Se guarda el divisor
-			move $a0, $t5 # El resultado original
+			move $s6, $t5 # El resultado original
 
 			# Luego se multiplica el resto por 10 el resto
 			move $t1, $t7
@@ -192,14 +402,36 @@
 			# Se guarda el resultado de la division en $t9 multiplicado por 1
 			add $t9, $t9, $t5
 
+			finDecimalesDivision:
+
 			# Finalmente se obtiene el resultado de la division original
-			move $t5, $a0
-			move $s7, $t9 # El número con la parte decimal
+			move $t5, $s6
+			move $t7, $t9 # El número con la parte decimal
 			
-			# Se retorna a la subrutina principal
-			lw $ra, 0($sp)
-			addi $sp, $sp, 4
-   			jr $ra
+			# Se inserta el signo del resultado
+			xor $s3, $s1, $s2
+			# Se cambia el signo en caso de ser necesario
+			beqz $s3, finDivisionEntera
+			sub $t5, $zero, $t5
+			
+			finDivisionEntera:
+				# Imprime resultado
+			
+				li $v0, 1
+				move $a0, $t5
+				syscall
+			
+				li $v0, 4
+				la $a0, punto
+				syscall
+			
+				li $v0, 1
+				move $a0, $t7
+				syscall
+				# Se retorna a la subrutina principal
+				lw $ra, 0($sp)
+				addi $sp, $sp, 4
+   				jr $ra
 			
 		finDivisorOperacion:
 			jr $ra
@@ -217,6 +449,14 @@
 		# Guarda en memoria la dirección para volver a la función de donde se invocó esta subrutina
 		addi $sp, $sp, -4
 		sw $ra, 0($sp)
+		# Se utiliza valor absoluto
+		jal absoluto
+		move $a0, $t1
+		move $t1, $t2
+		jal absoluto
+		move $t2, $t1
+		move $t1, $a0
+		li $a0, 0
 		add $t5, $zero, $zero        # Initialize the result to 0
   		add $t3, $zero, $t2          # Store the multiplier in $t3
   		add $t4, $zero, $t1          # Store the multiplicand in $t4
